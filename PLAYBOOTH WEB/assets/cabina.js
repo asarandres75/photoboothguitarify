@@ -62,6 +62,43 @@
     } catch (e) { /* sin sonido */ }
   }
 
+  // ===== Filtros (Normal, Blanco y negro, Calor) =====
+  // Mismas tablas que los <filter> del index.html, para que la foto salga igual que la vista en vivo.
+  const TABLAS = {
+    bn: [[0, 0.06, 0.5, 0.94, 1], [0, 0.06, 0.5, 0.94, 1], [0, 0.06, 0.5, 0.94, 1]],
+    calor: [[0.10, 0.55, 0.85, 1, 1], [0.01, 0.04, 0.16, 0.62, 0.95], [0.03, 0.06, 0.15, 0.45, 0.86]],
+  };
+  const LUTS = {};
+  for (const [nombre, canales] of Object.entries(TABLAS)) {
+    LUTS[nombre] = canales.map((t) => {
+      const lut = new Uint8ClampedArray(256), n = t.length - 1;
+      for (let v = 0; v < 256; v++) {
+        const x = (v / 255) * n, k = Math.min(Math.floor(x), n - 1);
+        lut[v] = Math.round((t[k] + (x - k) * (t[k + 1] - t[k])) * 255);
+      }
+      return lut;
+    });
+  }
+  let filtro = "normal";
+  function aplicarFiltro(lienzo) {
+    if (filtro === "normal") return;
+    const [lr, lg, lb] = LUTS[filtro];
+    const ctx = lienzo.getContext("2d");
+    const img = ctx.getImageData(0, 0, lienzo.width, lienzo.height);
+    const d = img.data;
+    for (let i = 0; i < d.length; i += 4) {
+      const y = Math.round(0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2]);
+      d[i] = lr[y]; d[i + 1] = lg[y]; d[i + 2] = lb[y];
+    }
+    ctx.putImageData(img, 0, 0);
+  }
+  function elegirFiltro(nombre) {
+    filtro = TABLAS[nombre] ? nombre : "normal";
+    video.style.filter = filtro === "normal" ? "" : `url(#f-${filtro})`;
+    document.querySelectorAll("#filtros .filtro").forEach((b) =>
+      b.classList.toggle("activo", b.dataset.filtro === filtro));
+  }
+
   // ===== Cámara =====
   async function abrirCamara() {
     $("avisoCamara").hidden = true;
@@ -108,6 +145,8 @@
     const ctx = lienzo.getContext("2d");
     if (CONFIG.ESPEJO) { ctx.translate(lienzo.width, 0); ctx.scale(-1, 1); }
     ctx.drawImage(video, sx, sy, sw, sh, 0, 0, lienzo.width, lienzo.height);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    aplicarFiltro(lienzo);
     return lienzo;
   }
 
@@ -161,6 +200,7 @@
     mini.innerHTML = "";
     if (enFoto && fotos[actual]) mini.appendChild(miniatura(fotos[actual]));
     else if (estado === "revisar" && capturada) mini.appendChild(miniatura(capturada));
+    else if (estado === "inicio") mini.innerHTML = '<img class="rep-sticker" src="assets/guitarra.png" alt="">';
     else mini.innerHTML = '<svg><use href="#i-pua"/></svg>';
 
     $("btnDisparar").disabled = !(estado === "camara" || estado === "inicio");
@@ -174,6 +214,8 @@
     estado = nuevo;
     app.dataset.estado = nuevo;
     $("resultado").hidden = !(nuevo === "final" || nuevo === "procesando");
+    const sePuedeFiltrar = nuevo === "inicio" || nuevo === "camara" || nuevo === "revisar";
+    document.querySelectorAll("#filtros .filtro").forEach((b) => { b.disabled = !sePuedeFiltrar; });
     pintarLista();
     pintarBarra();
   }
@@ -255,6 +297,7 @@
     $("qrCaja").innerHTML = '<div class="cargando"><span></span><span></span><span></span></div>';
     $("imgTira").removeAttribute("src");
     ponerEstadoSubida("Armando tu tira…", "");
+    $("textoFinal").hidden = true;
     $("btnReintentarSubida").hidden = true;
 
     const id = idAleatorio();
@@ -294,6 +337,7 @@
     if (!sesion) return;
     const { id, url, tiraBlob, fotosBlobs } = sesion;
     $("btnReintentarSubida").hidden = true;
+    $("textoFinal").hidden = true;
     ponerEstadoSubida("Subiendo tu tira…", "");
     $("qrCaja").innerHTML = '<div class="cargando"><span></span><span></span><span></span></div>';
     try {
@@ -305,7 +349,8 @@
       qr.addData(url);
       qr.make();
       $("qrCaja").innerHTML = qr.createSvgTag({ cellSize: 8, margin: 0, scalable: true });
-      ponerEstadoSubida("¡Muchas gracias por probar Guitarify! Descarga tus fotos y no olvides evaluar este proyecto.", "ok");
+      ponerEstadoSubida("Descarga tus fotos y no olvides evaluar este proyecto.", "ok");
+      $("textoFinal").hidden = false;
     } catch (e) {
       console.error("Error al subir", e);
       if (!sesion || sesion.id !== id) return;
@@ -341,11 +386,14 @@
     fotos = [null, null, null];
     actual = 0;
     capturada = null;
+    elegirFiltro("normal");
     cambiarEstado("inicio");
   }
 
   // ===== Eventos =====
   $("btnEmpezar").addEventListener("click", empezar);
+  document.querySelectorAll("#filtros .filtro").forEach((b) =>
+    b.addEventListener("click", () => elegirFiltro(b.dataset.filtro)));
   $("btnDisparar").addEventListener("click", disparar);
   $("btnRepetir").addEventListener("click", repetir);
   $("btnUsar").addEventListener("click", usar);

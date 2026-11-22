@@ -10,7 +10,7 @@
   const urlFoto = (nombre, descargar) =>
     `/api/foto?id=${encodeURIComponent(id)}&nombre=${nombre}${descargar ? "&descargar=1" : ""}`;
   const enlaceCompartir = location.origin + (deRuta ? location.pathname : `/t/${id}`);
-  const textoCompartir = "Mira mi tira del PlayBooth de Guitarify 🎸 Me la tomé en la Feria de Proyectos Personales de la UEPRIM.";
+  const textoCompartir = "Mi tira del PlayBooth de Guitarify en la Feria de Proyectos Personales 2026-2027 🎸";
 
   function aviso(texto) {
     const a = $("aviso");
@@ -27,10 +27,6 @@
   }
 
   if (!idValido) { noEncontrada(); return; }
-
-  const esIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-  $("notaIos").hidden = !esIOS;
 
   // ----- Tira principal (reintenta unos segundos por si se está subiendo) -----
   const img = $("imgTira");
