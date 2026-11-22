@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>PlayBooth · Guitarify</title>
+  <title>PlayBooth Guitarify</title>
   <meta name="theme-color" content="#0d0c0b">
   <link rel="icon" href="assets/pua.svg" type="image/svg+xml">
   <link rel="stylesheet" href="assets/tema.css">
@@ -28,8 +28,8 @@
       <div class="marca">
         <svg class="marca-pua"><use href="#i-pua"/></svg>
         <div>
-          <div class="marca-nombre titulo-anton">PlayBooth</div>
-          <div class="marca-sub">by Guitarify</div>
+          <div class="marca-nombre"><span class="marca-play">Play</span><span class="marca-booth">Booth</span></div>
+          <div class="marca-sub">Guitarify</div>
         </div>
       </div>
 
@@ -43,15 +43,6 @@
         </ol>
       </section>
 
-      <div class="consejo">
-        <strong>Tip</strong>
-        Miren a la cámara, no a la pantalla. Pueden repetir cada foto las veces que quieran.
-      </div>
-
-      <div class="teclas">
-        <span><kbd>Espacio</kbd> tomar / usar</span>
-        <span><kbd>R</kbd> repetir</span>
-      </div>
     </aside>
 
     <!-- Escenario principal -->
@@ -69,9 +60,8 @@
 
           <!-- Pantalla de inicio sobre la cámara -->
           <div class="portada" id="portada">
-            <div class="portada-tipo">Photobooth · Feria de Proyectos Personales</div>
+            <div class="portada-tipo">Feria de Proyectos Personales</div>
             <h1 class="portada-titulo titulo-anton">PlayBooth</h1>
-            <p class="portada-texto">Tres fotos. Una tira de Guitarify. Un QR para llevártela.</p>
             <button class="pildora pildora-roja grande" id="btnEmpezar">Empezar</button>
           </div>
 
@@ -97,7 +87,7 @@
             <div class="cargando" id="qrCargando"><span></span><span></span><span></span></div>
           </div>
           <p class="resultado-estado" id="estadoSubida">Subiendo tu tira…</p>
-          <p class="resultado-ayuda">Abre la cámara de tu celular, apunta al código y podrás descargar la tira, las fotos sueltas o mandarlas por WhatsApp.</p>
+          <p class="resultado-ayuda">Abre la cámara de tu celular y apunta al código. Desde ahí puedes descargar la tira, guardar cada foto o mandarlas por WhatsApp.</p>
           <div class="resultado-botones">
             <button class="pildora pildora-borde" id="btnReintentarSubida" hidden>
               <svg class="icono"><use href="#i-repetir"/></svg> Reintentar subida
@@ -116,7 +106,6 @@
         <div class="rep-mini" id="repMini"><svg><use href="#i-pua"/></svg></div>
         <div>
           <div class="rep-titulo" id="repTitulo">Listos para empezar</div>
-          <div class="rep-sub">PlayBooth · Guitarify</div>
         </div>
       </div>
 
