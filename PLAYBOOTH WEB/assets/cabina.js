@@ -1,4 +1,4 @@
-/* PlayBooth · Guitarify — lógica de la cabina */
+/* PlayBooth Guitarify: lógica de la cabina */
 (function () {
   // ===== Ajustes fáciles de cambiar =====
   const CONFIG = {
@@ -47,6 +47,18 @@
       osc.connect(g).connect(audio.destination);
       osc.start();
       osc.stop(audio.currentTime + duracion);
+    } catch (e) { /* sin sonido */ }
+  }
+
+  // Sonido de cámara al tomar cada foto (assets/camara.mp3)
+  const audioCamara = new Audio("assets/camara.mp3");
+  audioCamara.preload = "auto";
+  audioCamara.volume = 0.7;
+  function sonidoCamara() {
+    try {
+      audioCamara.currentTime = 0;
+      const p = audioCamara.play();
+      if (p && p.catch) p.catch(() => {});
     } catch (e) { /* sin sonido */ }
   }
 
@@ -115,14 +127,16 @@
       const li = document.createElement("li");
       const esActual = (estado === "camara" || estado === "contando" || estado === "revisar") && i === actual;
       li.className = "pista" + (fotos[i] ? " lista" : "") + (esActual ? " actual" : "") +
-        (sePuedeElegir && fotos[i] && !esActual ? " se-puede" : "");
-      const estadoTxt = esActual ? (estado === "revisar" ? "Revisando" : "Ahora") : fotos[i] ? (sePuedeElegir ? "Lista · toca para repetir" : "Lista") : "Pendiente";
+        (sePuedeElegir && fotos[i] ? " se-puede" : "");
+      // Fotos tomadas: "Foto 1 (lista)" + "Click para repetir". Las que faltan: "Pendiente".
+      const nombreTxt = fotos[i] ? `Foto ${i + 1} (lista)` : `Foto ${i + 1}`;
+      const estadoTxt = fotos[i] ? (sePuedeElegir ? "Click para repetir" : "") : "Pendiente";
       li.innerHTML = `<span class="pista-num">${i + 1}</span><span class="pista-mini"></span>
-        <span><div class="pista-nombre">Foto ${i + 1}</div><div class="pista-estado">${estadoTxt}</div></span>`;
+        <span><div class="pista-nombre">${nombreTxt}</div><div class="pista-estado">${estadoTxt}</div></span>`;
       const mini = li.querySelector(".pista-mini");
       if (fotos[i]) mini.appendChild(miniatura(fotos[i]));
       else mini.innerHTML = '<svg><use href="#i-camara"/></svg>';
-      if (sePuedeElegir && fotos[i] && !esActual) {
+      if (sePuedeElegir && fotos[i]) {
         li.title = "Repetir esta foto";
         li.addEventListener("click", () => elegirFoto(i));
       }
@@ -142,10 +156,8 @@
     const enFoto = ["camara", "contando", "revisar"].includes(estado);
     titulo.textContent =
       estado === "inicio" ? "Listos para empezar" :
-      estado === "camara" ? `Foto ${actual + 1} de ${TOTAL} · ¡Posen!` :
-      estado === "contando" ? `Foto ${actual + 1} de ${TOTAL} · ¡Sonrían!` :
-      estado === "revisar" ? `Foto ${actual + 1} de ${TOTAL} · ¿La usamos?` :
-      estado === "procesando" ? "Armando tu tira…" : "Tu tira PlayBooth";
+      enFoto ? `Foto ${actual + 1} de ${TOTAL}` :
+      estado === "procesando" ? "Armando tu tira" : "Tu tira está lista";
     mini.innerHTML = "";
     if (enFoto && fotos[actual]) mini.appendChild(miniatura(fotos[actual]));
     else if (estado === "revisar" && capturada) mini.appendChild(miniatura(capturada));
@@ -199,7 +211,7 @@
     capturada = capturar();
     const destello = $("destello");
     destello.classList.remove("activo"); void destello.offsetWidth; destello.classList.add("activo");
-    pitido(1400, 0.08, 0.2);
+    sonidoCamara();
     if (!capturada) { cambiarEstado("camara"); return; }
     revision.width = capturada.width;
     revision.height = capturada.height;
@@ -293,12 +305,12 @@
       qr.addData(url);
       qr.make();
       $("qrCaja").innerHTML = qr.createSvgTag({ cellSize: 8, margin: 0, scalable: true });
-      ponerEstadoSubida("¡Lista! Escanea el código con tu celular.", "ok");
+      ponerEstadoSubida("¡Muchas gracias por probar Guitarify! Descarga tus fotos y no olvides evaluar este proyecto.", "ok");
     } catch (e) {
       console.error("Error al subir", e);
       if (!sesion || sesion.id !== id) return;
       $("qrCaja").innerHTML = '<div style="color:#7d756b;font-weight:700;text-align:center">Sin conexión</div>';
-      ponerEstadoSubida("No se pudo subir la tira. Revisa el internet y reintenta.", "mal");
+      ponerEstadoSubida("No se pudo subir la tira. Revisa la conexión a internet y vuelve a intentarlo.", "mal");
       $("btnReintentarSubida").hidden = false;
     }
   }

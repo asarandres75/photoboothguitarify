@@ -10,7 +10,7 @@
   const urlFoto = (nombre, descargar) =>
     `/api/foto?id=${encodeURIComponent(id)}&nombre=${nombre}${descargar ? "&descargar=1" : ""}`;
   const enlaceCompartir = location.origin + (deRuta ? location.pathname : `/t/${id}`);
-  const textoCompartir = "Mi tira del PlayBooth de Guitarify 🎸 Feria de Proyectos Personales 2026–2027 · UEPRIM";
+  const textoCompartir = "Mira mi tira del PlayBooth de Guitarify 🎸 Me la tomé en la Feria de Proyectos Personales de la UEPRIM.";
 
   function aviso(texto) {
     const a = $("aviso");
@@ -58,13 +58,13 @@
           const blob = await r.blob();
           const archivo = new File([blob], `playbooth-guitarify-${id}.jpg`, { type: "image/jpeg" });
           if (navigator.canShare && navigator.canShare({ files: [archivo] })) {
-            await navigator.share({ files: [archivo], title: "PlayBooth · Guitarify", text: textoCompartir });
+            await navigator.share({ files: [archivo], title: "PlayBooth Guitarify", text: textoCompartir });
             return;
           }
         } catch (e) {
           if (e && e.name === "AbortError") return;
         }
-        await navigator.share({ title: "PlayBooth · Guitarify", text: textoCompartir, url: enlaceCompartir });
+        await navigator.share({ title: "PlayBooth Guitarify", text: textoCompartir, url: enlaceCompartir });
         return;
       }
       await copiar();
@@ -92,7 +92,7 @@
       <span class="foto-num">${i}</span>
       <span class="foto-cuerpo">
         <img class="foto-mini" alt="Foto ${i}" loading="lazy">
-        <span><div class="foto-nombre">Foto ${i}</div><div class="foto-sub">PlayBooth · Guitarify</div></span>
+        <span><div class="foto-nombre">Foto ${i}</div><div class="foto-sub">PlayBooth de Guitarify</div></span>
       </span>
       <a class="foto-bajar" title="Descargar foto ${i}" aria-label="Descargar foto ${i}"><svg><use href="#i-bajar"/></svg></a>`;
     const mini = li.querySelector("img");
