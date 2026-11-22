@@ -1,0 +1,7 @@
+{
+  "buildCommand": "rm -rf public && mkdir -p public && cp -r \"PLAYBOOTH WEB/index.html\" \"PLAYBOOTH WEB/tira.html\" \"PLAYBOOTH WEB/assets\" public/",
+  "outputDirectory": "public",
+  "rewrites": [
+    { "source": "/t/:id", "destination": "/tira.html" }
+  ]
+}
