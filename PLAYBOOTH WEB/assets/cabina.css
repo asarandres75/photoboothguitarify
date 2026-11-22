@@ -272,27 +272,27 @@ body { overflow: hidden; }
 .filtros-opciones { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .filtro {
   display: flex; flex-direction: column; align-items: center; gap: 6px;
-  padding: 10px 4px 9px; border-radius: 8px; border: 1.5px solid transparent;
+  padding: 12px 4px 11px; border-radius: 10px; border: 1.5px solid transparent;
   background: var(--panel-2); color: var(--texto-2);
-  font: inherit; font-size: 12px; font-weight: 700; line-height: 1.2; text-align: center;
+  font: inherit; font-size: 13px; font-weight: 700; line-height: 1.2; text-align: center;
   cursor: pointer; transition: background .15s, border-color .15s, color .15s;
 }
-.filtro img { width: 44px; height: 44px; object-fit: contain; }
+.filtro img { width: 50px; height: 50px; object-fit: contain; }
 .filtro:hover:not(:disabled) { background: var(--panel-3); color: var(--texto); }
 .filtro.activo { border-color: var(--oro); color: #fff; background: var(--panel-3); }
 .filtro:disabled { cursor: default; opacity: .45; }
 .filtro:focus-visible { outline: 3px solid var(--oro-claro); outline-offset: 2px; }
 @media (max-height: 820px) {
   .lateral { gap: 14px; padding-top: 16px; padding-bottom: 16px; }
-  .filtro { padding: 6px 4px; gap: 4px; }
-  .filtro img { width: 30px; height: 30px; }
+  .filtro { padding: 9px 4px 8px; gap: 5px; font-size: 12.5px; }
+  .filtro img { width: 40px; height: 40px; }
 }
 @media (max-height: 700px) {
   .pista { padding-top: 5px; padding-bottom: 5px; }
   .pista-mini { height: 42px; }
   .filtros { gap: 6px; }
-  .filtro { flex-direction: row; justify-content: center; padding: 5px 4px; font-size: 11px; }
-  .filtro img { width: 20px; height: 20px; }
+  .filtro { padding: 6px 4px; gap: 3px; font-size: 12px; }
+  .filtro img { width: 28px; height: 28px; }
 }
 @media (max-height: 700px) {
   .qr-caja { width: min(240px, 25vh); }

@@ -105,18 +105,43 @@
       b.classList.toggle("activo", b.dataset.filtro === filtro));
   }
 
-  // ===== Pixel =====
-  const BLOQUES_PIXEL = 56; // cuadritos a lo ancho
+  // ===== Pixel retro =====
+  // Pixeles finos + pocos colores + tono cálido y deslavado + viñeta, como una foto de cámara vieja.
+  const BLOQUES_PIXEL = 190;   // cuadritos a lo ancho (más = más fino)
+  const NIVELES_COLOR = 10;    // tonos por canal
+  const RETRO = (() => {
+    const canal = (calidez, piso, techo) => {
+      const lut = new Uint8ClampedArray(256);
+      for (let v = 0; v < 256; v++) {
+        let x = piso + (v / 255) * (techo - piso);           // negros levantados, blancos suaves
+        x = Math.min(1, x * calidez);
+        x = Math.round(x * (NIVELES_COLOR - 1)) / (NIVELES_COLOR - 1); // pocos colores
+        lut[v] = Math.round(x * 255);
+      }
+      return lut;
+    };
+    return [canal(1.06, 0.08, 0.97), canal(1.0, 0.07, 0.94), canal(0.88, 0.10, 0.88)];
+  })();
   const lienzoChico = document.createElement("canvas");
   function pixelar(origen, sx, sy, sw, sh, ctx, ancho, alto) {
     lienzoChico.width = BLOQUES_PIXEL;
     lienzoChico.height = Math.max(1, Math.round(BLOQUES_PIXEL * sh / sw));
-    const c = lienzoChico.getContext("2d");
+    const c = lienzoChico.getContext("2d", { willReadFrequently: true });
     c.imageSmoothingEnabled = true;
     c.drawImage(origen, sx, sy, sw, sh, 0, 0, lienzoChico.width, lienzoChico.height);
+    const img = c.getImageData(0, 0, lienzoChico.width, lienzoChico.height), d = img.data;
+    const [lr, lg, lb] = RETRO;
+    for (let i = 0; i < d.length; i += 4) { d[i] = lr[d[i]]; d[i + 1] = lg[d[i + 1]]; d[i + 2] = lb[d[i + 2]]; }
+    c.putImageData(img, 0, 0);
     ctx.save();
     ctx.imageSmoothingEnabled = false;
     ctx.drawImage(lienzoChico, 0, 0, lienzoChico.width, lienzoChico.height, 0, 0, ancho, alto);
+    // viñeta suave en las esquinas
+    const v = ctx.createRadialGradient(ancho / 2, alto / 2, Math.min(ancho, alto) * 0.35, ancho / 2, alto / 2, Math.hypot(ancho, alto) / 2);
+    v.addColorStop(0, "rgba(30, 12, 0, 0)");
+    v.addColorStop(1, "rgba(30, 12, 0, 0.45)");
+    ctx.fillStyle = v;
+    ctx.fillRect(0, 0, ancho, alto);
     ctx.restore();
   }
 
@@ -167,12 +192,19 @@
     let res;
     try { res = detector.detectForVideo(video, performance.now()); } catch (e) { return; }
     const caras = (res && res.detections) || [];
+    // Gafas para UNA sola persona: si ya hay alguien con gafas, se sigue a esa misma cara;
+    // si no, se elige la cara más grande (la que está más cerca de la cámara).
     let mejor = null;
     for (const c of caras) {
       if (!c.keypoints || c.keypoints.length < 2) continue;
+      const cx = (c.keypoints[0].x + c.keypoints[1].x) / 2 * vw;
+      const cy = (c.keypoints[0].y + c.keypoints[1].y) / 2 * vh;
       const area = c.boundingBox ? c.boundingBox.width * c.boundingBox.height : 0;
-      if (!mejor || area > mejor.area) mejor = { c, area };
+      const puntaje = cara ? -Math.hypot(cx - cara.x, cy - cara.y) : area;
+      if (!mejor || puntaje > mejor.puntaje) mejor = { c, puntaje, cx, cy };
     }
+    // si la cara más cercana está muy lejos de la anterior, es otra persona: se cambia solo si la anterior ya no aparece
+    if (mejor && cara && -mejor.puntaje > cara.d * 2.5 && performance.now() - ultimaCara < 700) mejor = null;
     if (!mejor) {
       if (performance.now() - ultimaCara > 700) cara = null;
       return;
