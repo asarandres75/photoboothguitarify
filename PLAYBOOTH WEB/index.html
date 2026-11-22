@@ -36,6 +36,14 @@
         <feFuncB type="table" tableValues="0.03 0.06 0.15 0.45 0.86"/>
       </feComponentTransfer>
     </filter>
+    <filter id="f-frio" color-interpolation-filters="sRGB">
+      <feColorMatrix type="matrix" values="0.2126 0.7152 0.0722 0 0  0.2126 0.7152 0.0722 0 0  0.2126 0.7152 0.0722 0 0  0 0 0 1 0"/>
+      <feComponentTransfer>
+        <feFuncR type="table" tableValues="0.02 0.05 0.22 0.66 0.93"/>
+        <feFuncG type="table" tableValues="0.04 0.18 0.48 0.84 0.98"/>
+        <feFuncB type="table" tableValues="0.12 0.45 0.84 1 1"/>
+      </feComponentTransfer>
+    </filter>
     <symbol id="i-bajar" viewBox="0 0 24 24"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 19.5h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   </svg>
 
@@ -66,6 +74,9 @@
           <button class="filtro activo" data-filtro="normal"><img src="assets/guitarra.png" alt=""><span>Normal</span></button>
           <button class="filtro" data-filtro="bn"><img src="assets/guitarra.png" alt="" style="filter:url(#f-bn)"><span>Blanco y negro</span></button>
           <button class="filtro" data-filtro="calor"><img src="assets/guitarra.png" alt="" style="filter:url(#f-calor)"><span>Calor</span></button>
+          <button class="filtro" data-filtro="frio"><img src="assets/guitarra.png" alt="" style="filter:url(#f-frio)"><span>Frío</span></button>
+          <button class="filtro" data-filtro="pixel"><img src="assets/guitarra-pixel.png" alt="" style="image-rendering:pixelated"><span>Pixel</span></button>
+          <button class="filtro" data-filtro="gafas"><img src="assets/gafas.svg" alt=""><span>Gafas</span></button>
         </div>
       </section>
 
@@ -79,6 +90,7 @@
       <div class="escenario" id="escenario">
         <div class="marco-foto" id="marco">
           <video id="video" autoplay playsinline muted></video>
+          <canvas id="capa" class="capa" hidden></canvas>
           <canvas id="revision" class="revision"></canvas>
           <div class="etiqueta-foto" id="etiqueta">Foto 1 de 3</div>
           <div class="cuenta-atras" id="cuentaAtras"></div>
@@ -132,7 +144,7 @@
     <!-- Barra inferior tipo reproductor -->
     <footer class="reproductor">
       <div class="rep-izq">
-        <div class="rep-mini" id="repMini"><img class="rep-sticker" src="assets/guitarra.png" alt=""></div>
+        <div class="rep-mini" id="repMini"><svg><use href="#i-pua"/></svg></div>
         <div>
           <div class="rep-titulo" id="repTitulo">Listos para empezar</div>
         </div>
