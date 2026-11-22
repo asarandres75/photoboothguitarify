@@ -7,8 +7,9 @@ export async function POST(request) {
   const id = url.searchParams.get("id");
   const nombre = url.searchParams.get("nombre");
   if (!validar(id, nombre)) return json({ error: "id o nombre inválido" }, 400);
-  if (!process.env.BLOB_READ_WRITE_TOKEN) {
-    return json({ error: "Falta conectar el Blob store al proyecto en Vercel (BLOB_READ_WRITE_TOKEN)." }, 500);
+  // Vercel conecta el Blob store con BLOB_READ_WRITE_TOKEN (forma clásica) o con BLOB_STORE_ID + OIDC (forma nueva)
+  if (!process.env.BLOB_READ_WRITE_TOKEN && !process.env.BLOB_STORE_ID) {
+    return json({ error: "Falta conectar el Blob store al proyecto en Vercel (Storage → Blob → Connect)." }, 500);
   }
 
   const datos = Buffer.from(await request.arrayBuffer());
