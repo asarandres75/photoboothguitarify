@@ -86,11 +86,11 @@ body { overflow: hidden; }
   background: #090807;
   box-shadow: var(--sombra), 0 0 0 1.5px rgba(212, 165, 42, .55);
 }
-.marco-foto video, .marco-foto .revision {
+.marco-foto video, .marco-foto .revision, .marco-foto .capa {
   position: absolute; inset: 0; width: 100%; height: 100%;
   object-fit: cover; display: block;
 }
-.marco-foto video.espejo { transform: scaleX(-1); }
+.marco-foto video.espejo, .marco-foto .capa.espejo { transform: scaleX(-1); }
 .revision { opacity: 0; transition: opacity .15s ease; }
 
 .etiqueta-foto {
@@ -195,7 +195,6 @@ body { overflow: hidden; }
 }
 .rep-mini svg { width: 34px; height: 34px; }
 .rep-mini canvas { width: 100%; height: 100%; object-fit: cover; }
-.rep-sticker { width: 54px; height: 54px; object-fit: contain; transform: rotate(-8deg); filter: drop-shadow(0 3px 6px rgba(0, 0, 0, .45)); }
 .rep-titulo { font-weight: 700; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rep-sub { font-size: 12.5px; color: var(--texto-2); margin-top: 3px; }
 
@@ -283,10 +282,17 @@ body { overflow: hidden; }
 .filtro.activo { border-color: var(--oro); color: #fff; background: var(--panel-3); }
 .filtro:disabled { cursor: default; opacity: .45; }
 .filtro:focus-visible { outline: 3px solid var(--oro-claro); outline-offset: 2px; }
-@media (max-height: 700px) {
+@media (max-height: 820px) {
   .lateral { gap: 14px; padding-top: 16px; padding-bottom: 16px; }
-  .filtro { padding: 7px 4px; }
-  .filtro img { width: 34px; height: 34px; }
+  .filtro { padding: 6px 4px; gap: 4px; }
+  .filtro img { width: 30px; height: 30px; }
+}
+@media (max-height: 700px) {
+  .pista { padding-top: 5px; padding-bottom: 5px; }
+  .pista-mini { height: 42px; }
+  .filtros { gap: 6px; }
+  .filtro { flex-direction: row; justify-content: center; padding: 5px 4px; font-size: 11px; }
+  .filtro img { width: 20px; height: 20px; }
 }
 @media (max-height: 700px) {
   .qr-caja { width: min(240px, 25vh); }

@@ -67,7 +67,11 @@
   const TABLAS = {
     bn: [[0, 0.06, 0.5, 0.94, 1], [0, 0.06, 0.5, 0.94, 1], [0, 0.06, 0.5, 0.94, 1]],
     calor: [[0.10, 0.55, 0.85, 1, 1], [0.01, 0.04, 0.16, 0.62, 0.95], [0.03, 0.06, 0.15, 0.45, 0.86]],
+    frio: [[0.02, 0.05, 0.22, 0.66, 0.93], [0.04, 0.18, 0.48, 0.84, 0.98], [0.12, 0.45, 0.84, 1, 1]],
   };
+  // Filtros que se dibujan encima del video en un canvas (no son solo color)
+  const CON_CAPA = ["pixel", "gafas"];
+  const FILTROS = ["normal", ...Object.keys(TABLAS), ...CON_CAPA];
   const LUTS = {};
   for (const [nombre, canales] of Object.entries(TABLAS)) {
     LUTS[nombre] = canales.map((t) => {
@@ -81,7 +85,7 @@
   }
   let filtro = "normal";
   function aplicarFiltro(lienzo) {
-    if (filtro === "normal") return;
+    if (!TABLAS[filtro]) return;
     const [lr, lg, lb] = LUTS[filtro];
     const ctx = lienzo.getContext("2d");
     const img = ctx.getImageData(0, 0, lienzo.width, lienzo.height);
@@ -93,11 +97,126 @@
     ctx.putImageData(img, 0, 0);
   }
   function elegirFiltro(nombre) {
-    filtro = TABLAS[nombre] ? nombre : "normal";
-    video.style.filter = filtro === "normal" ? "" : `url(#f-${filtro})`;
+    filtro = FILTROS.includes(nombre) ? nombre : "normal";
+    video.style.filter = TABLAS[filtro] ? `url(#f-${filtro})` : "";
+    capa.hidden = !CON_CAPA.includes(filtro);
+    if (filtro === "gafas") cargarDetector();
     document.querySelectorAll("#filtros .filtro").forEach((b) =>
       b.classList.toggle("activo", b.dataset.filtro === filtro));
   }
+
+  // ===== Pixel =====
+  const BLOQUES_PIXEL = 56; // cuadritos a lo ancho
+  const lienzoChico = document.createElement("canvas");
+  function pixelar(origen, sx, sy, sw, sh, ctx, ancho, alto) {
+    lienzoChico.width = BLOQUES_PIXEL;
+    lienzoChico.height = Math.max(1, Math.round(BLOQUES_PIXEL * sh / sw));
+    const c = lienzoChico.getContext("2d");
+    c.imageSmoothingEnabled = true;
+    c.drawImage(origen, sx, sy, sw, sh, 0, 0, lienzoChico.width, lienzoChico.height);
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(lienzoChico, 0, 0, lienzoChico.width, lienzoChico.height, 0, 0, ancho, alto);
+    ctx.restore();
+  }
+
+  // ===== Gafas de guitarra (detección de cara con MediaPipe) =====
+  const MP = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
+  const MODELO_CARA = "https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite";
+  const imgGafas = new Image();
+  imgGafas.src = "assets/gafas.svg";
+  // En gafas.svg el punto (0,0) está entre los lentes, a 270 × 380 de la esquina; los lentes están a 250 de distancia.
+  const GAFAS = { origenX: 270, origenY: 380, ancho: 540, alto: 490, entreLentes: 250 };
+  let detector = null, cargandoDetector = null, detectorFallo = false;
+  let cara = null, ultimaCara = 0, ultimoTiempoVideo = -1;
+
+  function cargarDetector() {
+    if (detector || cargandoDetector || detectorFallo) return cargandoDetector;
+    cargandoDetector = (async () => {
+      try {
+        const vision = await import(`${MP}/vision_bundle.mjs`);
+        const archivos = await vision.FilesetResolver.forVisionTasks(`${MP}/wasm`);
+        const opciones = (delegate) => ({
+          baseOptions: { modelAssetPath: MODELO_CARA, delegate },
+          runningMode: "VIDEO",
+          minDetectionConfidence: 0.5,
+        });
+        try {
+          detector = await vision.FaceDetector.createFromOptions(archivos, opciones("GPU"));
+        } catch (e) {
+          detector = await vision.FaceDetector.createFromOptions(archivos, opciones("CPU"));
+        }
+      } catch (e) {
+        console.warn("No se pudo cargar la detección de cara; las gafas irán al centro.", e);
+        detectorFallo = true;
+      }
+      cargandoDetector = null;
+    })();
+    return cargandoDetector;
+  }
+
+  function detectarCara() {
+    const vw = video.videoWidth, vh = video.videoHeight;
+    if (detectorFallo) {
+      // Sin detección: gafas fijas al centro, a la altura de los ojos
+      cara = { x: vw / 2, y: vh * 0.42, d: vw * 0.16, ang: 0 };
+      return;
+    }
+    if (!detector || video.readyState < 2 || video.currentTime === ultimoTiempoVideo) return;
+    ultimoTiempoVideo = video.currentTime;
+    let res;
+    try { res = detector.detectForVideo(video, performance.now()); } catch (e) { return; }
+    const caras = (res && res.detections) || [];
+    let mejor = null;
+    for (const c of caras) {
+      if (!c.keypoints || c.keypoints.length < 2) continue;
+      const area = c.boundingBox ? c.boundingBox.width * c.boundingBox.height : 0;
+      if (!mejor || area > mejor.area) mejor = { c, area };
+    }
+    if (!mejor) {
+      if (performance.now() - ultimaCara > 700) cara = null;
+      return;
+    }
+    let [a, b] = mejor.c.keypoints;
+    if (a.x > b.x) [a, b] = [b, a];
+    const ax = a.x * vw, ay = a.y * vh, bx = b.x * vw, by = b.y * vh;
+    const nueva = {
+      x: (ax + bx) / 2, y: (ay + by) / 2,
+      d: Math.hypot(bx - ax, by - ay), ang: Math.atan2(by - ay, bx - ax),
+    };
+    // suaviza un poco para que las gafas no tiemblen
+    const k = cara ? 0.55 : 1;
+    cara = cara ? {
+      x: cara.x + (nueva.x - cara.x) * k, y: cara.y + (nueva.y - cara.y) * k,
+      d: cara.d + (nueva.d - cara.d) * k, ang: cara.ang + (nueva.ang - cara.ang) * k,
+    } : nueva;
+    ultimaCara = performance.now();
+  }
+
+  function dibujarGafas(ctx, c) {
+    if (!c || !imgGafas.complete || !imgGafas.naturalWidth) return;
+    const s = (c.d / GAFAS.entreLentes) * 1.25; // un poco más grandes que la distancia entre los ojos
+    ctx.save();
+    ctx.translate(c.x, c.y);
+    ctx.rotate(c.ang);
+    ctx.drawImage(imgGafas, -GAFAS.origenX * s, -GAFAS.origenY * s, GAFAS.ancho * s, GAFAS.alto * s);
+    ctx.restore();
+  }
+
+  // Capa en vivo (pixel o gafas) encima del video
+  const capa = $("capa");
+  const ctxCapa = capa.getContext("2d");
+  function pintarCapa() {
+    requestAnimationFrame(pintarCapa);
+    if (!CON_CAPA.includes(filtro)) return;
+    const vw = video.videoWidth, vh = video.videoHeight;
+    if (!vw || !vh) return;
+    if (capa.width !== vw || capa.height !== vh) { capa.width = vw; capa.height = vh; }
+    ctxCapa.clearRect(0, 0, vw, vh);
+    if (filtro === "pixel") pixelar(video, 0, 0, vw, vh, ctxCapa, vw, vh);
+    else { detectarCara(); dibujarGafas(ctxCapa, cara); }
+  }
+  requestAnimationFrame(pintarCapa);
 
   // ===== Cámara =====
   async function abrirCamara() {
@@ -114,6 +233,7 @@
       });
       video.srcObject = flujo;
       video.classList.toggle("espejo", CONFIG.ESPEJO);
+      capa.classList.toggle("espejo", CONFIG.ESPEJO);
       await video.play().catch(() => {});
       return true;
     } catch (e) {
@@ -145,7 +265,14 @@
     const ctx = lienzo.getContext("2d");
     if (CONFIG.ESPEJO) { ctx.translate(lienzo.width, 0); ctx.scale(-1, 1); }
     ctx.drawImage(video, sx, sy, sw, sh, 0, 0, lienzo.width, lienzo.height);
+    if (filtro === "gafas") {
+      // mismas coordenadas que el video (ya con el espejo aplicado)
+      ctx.scale(lienzo.width / sw, lienzo.height / sh);
+      ctx.translate(-sx, -sy);
+      dibujarGafas(ctx, cara);
+    }
     ctx.setTransform(1, 0, 0, 1, 0, 0);
+    if (filtro === "pixel") pixelar(lienzo, 0, 0, lienzo.width, lienzo.height, ctx, lienzo.width, lienzo.height);
     aplicarFiltro(lienzo);
     return lienzo;
   }
@@ -200,7 +327,6 @@
     mini.innerHTML = "";
     if (enFoto && fotos[actual]) mini.appendChild(miniatura(fotos[actual]));
     else if (estado === "revisar" && capturada) mini.appendChild(miniatura(capturada));
-    else if (estado === "inicio") mini.innerHTML = '<img class="rep-sticker" src="assets/guitarra.png" alt="">';
     else mini.innerHTML = '<svg><use href="#i-pua"/></svg>';
 
     $("btnDisparar").disabled = !(estado === "camara" || estado === "inicio");

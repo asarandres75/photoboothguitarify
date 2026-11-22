@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="540" height="490" viewBox="-270 -380 540 490">
+  <!-- Gafas de guitarra del PlayBooth. El punto (0,0) es el centro entre los dos lentes; los lentes están en x = -125 y x = 125. -->
+  <defs>
+    <g id="guitarra">
+      <!-- mástil -->
+      <rect x="-14" y="-262" width="28" height="200" rx="3" fill="#8f0c1f" stroke="#d4ad37" stroke-width="7"/>
+      <g stroke="#d4ad37" stroke-width="4" stroke-linecap="round">
+        <line x1="-11" y1="-96" x2="11" y2="-96"/><line x1="-11" y1="-124" x2="11" y2="-124"/>
+        <line x1="-11" y1="-152" x2="11" y2="-152"/><line x1="-11" y1="-180" x2="11" y2="-180"/>
+        <line x1="-11" y1="-208" x2="11" y2="-208"/><line x1="-11" y1="-236" x2="11" y2="-236"/>
+      </g>
+      <!-- clavijero -->
+      <path d="M-17 -258 L-26 -330 C-27 -350 -8 -356 4 -351 C20 -345 29 -333 26 -316 L17 -258 Z" fill="#c8102e" stroke="#d4ad37" stroke-width="7" stroke-linejoin="round"/>
+      <g fill="#f6efe4" stroke="#d4ad37" stroke-width="3">
+        <circle cx="-32" cy="-276" r="8"/><circle cx="-33" cy="-300" r="8"/><circle cx="-33" cy="-324" r="8"/>
+        <circle cx="32" cy="-276" r="8"/><circle cx="33" cy="-300" r="8"/><circle cx="33" cy="-324" r="8"/>
+      </g>
+      <!-- cuerpo -->
+      <path d="M-104 -6 C-108 -52 -92 -90 -64 -88 C-45 -87 -41 -68 -22 -68 L22 -68 C41 -68 47 -100 72 -98 C99 -96 112 -54 108 2 C104 58 64 92 0 92 C-64 92 -101 52 -104 -6 Z" fill="#c8102e" stroke="#d4ad37" stroke-width="12" stroke-linejoin="round"/>
+      <!-- cuerdas -->
+      <g stroke="#f6efe4" stroke-width="2" opacity=".85">
+        <line x1="-6" y1="-344" x2="-6" y2="-66"/><line x1="0" y1="-346" x2="0" y2="-66"/><line x1="6" y1="-344" x2="6" y2="-66"/>
+      </g>
+      <!-- lente -->
+      <ellipse cx="0" cy="0" rx="78" ry="64" fill="#140c0d" fill-opacity=".8" stroke="#8f0c1f" stroke-width="5"/>
+      <path d="M-52 -30 C-40 -46 -18 -52 4 -50" fill="none" stroke="#f6efe4" stroke-width="7" stroke-linecap="round" opacity=".45"/>
+      <!-- puente de la guitarra -->
+      <line x1="-26" y1="76" x2="26" y2="76" stroke="#d4ad37" stroke-width="9" stroke-linecap="round"/>
+    </g>
+  </defs>
+  <!-- puente de las gafas -->
+  <path d="M-40 -14 Q0 -40 40 -14" fill="none" stroke="#d4ad37" stroke-width="14" stroke-linecap="round"/>
+  <use xlink:href="#guitarra" href="#guitarra" transform="translate(-125 0) rotate(-14)"/>
+  <use xlink:href="#guitarra" href="#guitarra" transform="translate(125 0) scale(-1 1) rotate(-14)"/>
+</svg>
