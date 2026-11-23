@@ -22,7 +22,7 @@
   let actual = 0;                  // índice de la foto que se está tomando
   let capturada = null;            // canvas recién tomado (sin aceptar)
   let flujo = null;                // MediaStream de la cámara
-  let sesion = null;               // { id, url, tiraBlob, fotosBlobs }
+  let sesion = null;               // { id, url, tiraBlob, fotosBlobs, estilo, tiraSubida, qrListo }
   let temporizadorReinicio = null;
   let segundosReinicio = 0;
 
@@ -460,20 +460,82 @@
 
     const id = idAleatorio();
     const url = `${await urlBase()}/t/${id}`;
-    const tira = await Tira.componerTira(fotos, url, 2);
-    const tiraBlob = await enCanvas(tira, "image/jpeg", 0.92);
     const fotosBlobs = await Promise.all(fotos.map((f) => enCanvas(f)));
-    sesion = { id, url, tiraBlob, fotosBlobs };
-
-    const urlLocal = URL.createObjectURL(tiraBlob);
-    $("imgTira").src = urlLocal;
-    const enlace = $("btnDescargarAqui");
-    enlace.href = urlLocal;
-    enlace.download = `playbooth-guitarify-${id}.jpg`;
+    sesion = { id, url, tiraBlob: null, fotosBlobs, estilo: "normal", tiraSubida: null, qrListo: false };
+    await armarTira("normal");
+    pintarMiniaturasEstilos(url);
 
     cambiarEstado("final");
     iniciarReinicio();
     await subir();
+  }
+
+  // ===== Elegir diseño de tira (Clásica, Reproductor, Minimal) =====
+  async function armarTira(estilo) {
+    const s = sesion;
+    const tira = await Tira.componerTira(fotos, s.url, 2, estilo);
+    const blob = await enCanvas(tira, "image/jpeg", 0.92);
+    if (sesion !== s) return;
+    s.estilo = estilo;
+    s.tiraBlob = blob;
+    const anterior = $("imgTira").src;
+    const urlLocal = URL.createObjectURL(blob);
+    $("imgTira").src = urlLocal;
+    if (anterior && anterior.startsWith("blob:")) URL.revokeObjectURL(anterior);
+    const enlace = $("btnDescargarAqui");
+    enlace.href = urlLocal;
+    enlace.download = `playbooth-guitarify-${s.id}.jpg`;
+    document.querySelectorAll("#estilos .estilo").forEach((b) => b.classList.toggle("activo", b.dataset.estilo === estilo));
+  }
+
+  async function pintarMiniaturasEstilos(url) {
+    for (const b of document.querySelectorAll("#estilos .estilo")) {
+      const mini = await Tira.componerTira(fotos, url, 0.25, b.dataset.estilo);
+      const caja = b.querySelector(".estilo-mini");
+      caja.innerHTML = "";
+      caja.appendChild(mini);
+    }
+  }
+
+  let cambiandoEstilo = false;
+  async function elegirEstilo(estilo) {
+    if (!sesion || estado !== "final" || cambiandoEstilo || sesion.estilo === estilo) return;
+    cambiandoEstilo = true;
+    try {
+      await armarTira(estilo);
+      if (sesion && sesion.qrListo) await sincronizarTira();
+    } finally {
+      cambiandoEstilo = false;
+    }
+  }
+
+  // Sube la tira elegida (mismo id = el QR sigue sirviendo) hasta que la subida sea la última elegida
+  let sincronizando = false;
+  async function sincronizarTira() {
+    if (sincronizando || !sesion) return;
+    sincronizando = true;
+    const s = sesion;
+    try {
+      while (sesion === s && s.tiraSubida !== s.tiraBlob) {
+        const blob = s.tiraBlob;
+        ponerEstadoSubida("Actualizando tu tira…", "");
+        $("textoFinal").hidden = true;
+        await subirArchivo(s.id, "tira", blob);
+        s.tiraSubida = blob;
+      }
+      if (sesion === s) {
+        ponerEstadoSubida("Descarga tus fotos y no olvides evaluar este proyecto.", "ok");
+        $("textoFinal").hidden = false;
+      }
+    } catch (e) {
+      console.error("Error al actualizar la tira", e);
+      if (sesion === s) {
+        ponerEstadoSubida("No se pudo actualizar la tira. Revisa la conexión y vuelve a elegirla.", "mal");
+        s.tiraSubida = null;
+      }
+    } finally {
+      sincronizando = false;
+    }
   }
 
   function ponerEstadoSubida(texto, clase) {
@@ -493,7 +555,8 @@
 
   async function subir() {
     if (!sesion) return;
-    const { id, url, tiraBlob, fotosBlobs } = sesion;
+    const s = sesion;
+    const { id, url, tiraBlob, fotosBlobs } = s;
     $("btnReintentarSubida").hidden = true;
     $("textoFinal").hidden = true;
     ponerEstadoSubida("Subiendo tu tira…", "");
@@ -503,12 +566,16 @@
       await subirArchivo(id, "tira", tiraBlob);
       await Promise.all(fotosBlobs.map((b, i) => subirArchivo(id, `foto${i + 1}`, b)));
       if (!sesion || sesion.id !== id) return; // ya empezó otra sesión
+      s.tiraSubida = tiraBlob;
+      s.qrListo = true;
       const qr = qrcode(0, "M");
       qr.addData(url);
       qr.make();
       $("qrCaja").innerHTML = qr.createSvgTag({ cellSize: 8, margin: 0, scalable: true });
       ponerEstadoSubida("Descarga tus fotos y no olvides evaluar este proyecto.", "ok");
       $("textoFinal").hidden = false;
+      // si eligieron otro diseño mientras se subía, se sube el nuevo
+      if (s.tiraBlob !== s.tiraSubida) await sincronizarTira();
     } catch (e) {
       console.error("Error al subir", e);
       if (!sesion || sesion.id !== id) return;
@@ -557,6 +624,8 @@
   $("btnUsar").addEventListener("click", usar);
   $("btnNueva").addEventListener("click", volverAlInicio);
   $("btnReintentarSubida").addEventListener("click", subir);
+  document.querySelectorAll("#estilos .estilo").forEach((b) =>
+    b.addEventListener("click", () => elegirEstilo(b.dataset.estilo)));
   $("btnReintentarCamara").addEventListener("click", async () => {
     flujo = null;
     await abrirCamara();

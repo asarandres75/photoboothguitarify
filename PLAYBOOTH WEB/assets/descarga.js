@@ -7,8 +7,10 @@
   const id = (deRuta && deRuta[1]) || new URLSearchParams(location.search).get("id") || "";
   const idValido = /^[a-z0-9]{6,32}$/i.test(id);
 
+  // "v" evita que el celular muestre una versión vieja de la tira si en la cabina eligieron otro diseño
+  const version = Date.now();
   const urlFoto = (nombre, descargar) =>
-    `/api/foto?id=${encodeURIComponent(id)}&nombre=${nombre}${descargar ? "&descargar=1" : ""}`;
+    `/api/foto?id=${encodeURIComponent(id)}&nombre=${nombre}${descargar ? "&descargar=1" : ""}${nombre === "tira" ? `&v=${version}` : ""}`;
   const enlaceCompartir = location.origin + (deRuta ? location.pathname : `/t/${id}`);
   const textoCompartir = "Mi tira del PlayBooth de Guitarify en la Feria de Proyectos Personales 2026-2027 🎸";
 
